@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduQuiz - Permainan Kuis Edukasi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark);
+        }
+
+        .card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            transition: all 0.3s;
+        }
+
+        .btn-accent:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .input-field {
+            transition: all 0.3s;
+            border: 2px solid #e9ecef;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: var(--accent);
+            transition: width 0.5s ease;
+        }
+
+        .option-card {
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .option-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+
+        .option-card.correct {
+            border-color: #4cc9f0;
+            background-color: rgba(76, 201, 240, 0.1);
+        }
+
+        .option-card.incorrect {
+            border-color: var(--accent);
+            background-color: rgba(247, 37, 133, 0.1);
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .result-badge {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="container max-w-4xl mx-auto">
+        <!-- Halaman Selamat Datang -->
+        <div id="welcomePage" class="page active">
+            <div class="card bg-white rounded-2xl p-8 md:p-12 text-center">
+                <div class="flex justify-center mb-8">
+                    <img src="https://placehold.co/400x250" alt="Ilustrasi berwarna-warni orang-orang yang mengikuti kuis dengan gelembung pikiran dan bintang di sekitarnya" class="rounded-xl mb-6 floating" />
+                </div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Selamat datang di <span class="text-primary">EduQuiz</span></h1>
+                <p class="text-lg text-gray-600 mb-8">Uji pengetahuan Anda dan pelajari hal baru dengan permainan kuis interaktif kami!</p>
+                <div class="flex flex-col md:flex-row justify-center gap-4">
+                    <button id="loginBtn" class="btn-primary text-white py-3 px-8 rounded-lg font-medium text-lg">Masuk</button>
+                    <button id="registerBtn" class="bg-white border-2 border-primary text-primary py-3 px-8 rounded-lg font-medium text-lg hover:bg-gray-50">Daftar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Masuk -->
+        <div id="loginPage" class="page">
+            <div class="card bg-white rounded-2xl p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Selamat Datang Kembali!</h2>
+                    <p class="text-gray-600">Masuk untuk melanjutkan perjalanan belajar Anda</p>
+                </div>
+                <form id="loginForm">
+                    <div class="mb-6">
+                        <label for="loginEmail" class="block text-gray-700 font-medium mb-2">Email</label>
+                        <input type="email" id="loginEmail" class="input-field w-full p-4 rounded-lg" placeholder="Masukkan email Anda" required>
+                        <p id="loginEmailError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="loginPassword" class="block text-gray-700 font-medium mb-2">Kata Sandi</label>
+                        <input type="password" id="loginPassword" class="input-field w-full p-4 rounded-lg" placeholder="Masukkan kata sandi Anda" required>
+                        <p id="loginPasswordError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <button type="submit" class="btn-primary w-full text-white py-3 px-8 rounded-lg font-medium text-lg mb-4">Masuk</button>
+                    <p class="text-center text-gray-600">Belum punya akun? <button id="goToRegisterFromLogin" class="text-primary font-medium">Daftar</button></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Halaman Daftar -->
+        <div id="registerPage" class="page">
+            <div class="card bg-white rounded-2xl p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Buat Akun</h2>
+                    <p class="text-gray-600">Bergabunglah dengan komunitas pembelajar kami</p>
+                </div>
+                <form id="registerForm">
+                    <div class="mb-6">
+                        <label for="registerName" class="block text-gray-700 font-medium mb-2">Nama Lengkap</label>
+                        <input type="text" id="registerName" class="input-field w-full p-4 rounded-lg" placeholder="Masukkan nama lengkap Anda" required>
+                        <p id="registerNameError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="registerEmail" class="block text-gray-700 font-medium mb-2">Email</label>
+                        <input type="email" id="registerEmail" class="input-field w-full p-4 rounded-lg" placeholder="Masukkan email Anda" required>
+                        <p id="registerEmailError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="registerPassword" class="block text-gray-700 font-medium mb-2">Kata Sandi</label>
+                        <input type="password" id="registerPassword" class="input-field w-full p-4 rounded-lg" placeholder="Buat kata sandi (min 6 karakter)" minlength="6" required>
+                        <p id="registerPasswordError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="registerConfirmPassword" class="block text-gray-700 font-medium mb-2">Konfirmasi Kata Sandi</label>
+                        <input type="password" id="registerConfirmPassword" class="input-field w-full p-4 rounded-lg" placeholder="Konfirmasi kata sandi Anda" required>
+                        <p id="registerConfirmPasswordError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <button type="submit" class="btn-primary w-full text-white py-3 px-8 rounded-lg font-medium text-lg mb-4">Daftar</button>
+                    <p class="text-center text-gray-600">Sudah punya akun? <button id="goToLoginFromRegister" class="text-primary font-medium">Masuk</button></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Halaman Dashboard -->
+        <div id="dashboardPage" class="page">
+            <div class="card bg-white rounded-2xl p-8 md:p-12">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Selamat datang, <span id="userNameDisplay">Pengguna</span>!</h2>
+                        <p class="text-gray-600">Pilih kuis untuk memulai</p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium">Keluar</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="indonesia">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-flag text-blue-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis Indonesia</h3>
+                                <p class="text-sm text-gray-600">Uji pengetahuan Anda tentang Indonesia</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="history">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-purple-100 p-3 rounded-lg">
+                                <i class="fas fa-landmark text-purple-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis Sejarah</h3>
+                                <p class="text-sm text-gray-600">Uji pengetahuan sejarah Anda</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="math">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-calculator text-green-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis Matematika</h3>
+                                <p class="text-sm text-gray-600">Uji keterampilan matematika Anda</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="geography">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-yellow-100 p-3 rounded-lg">
+                                <i class="fas fa-globe-americas text-yellow-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis Geografi</h3>
+                                <p class="text-sm text-gray-600">Uji pengetahuan geografi Anda</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Kuis baru: Bahasa Indonesia -->
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="bahasa">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-book text-blue-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis Bahasa Indonesia</h3>
+                                <p class="text-sm text-gray-600">Tata bahasa & sastra Indonesia</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Kuis baru: IPA -->
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="ipa">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-flask text-green-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis IPA</h3>
+                                <p class="text-sm text-gray-600">Ilmu Pengetahuan Alam</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Kuis baru: IPS -->
+                    <div class="card bg-white rounded-xl p-6 border border-gray-100 hover:border-primary cursor-pointer" data-quiz="ips">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-yellow-100 p-3 rounded-lg">
+                                <i class="fas fa-globe-asia text-yellow-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Kuis IPS</h3>
+                                <p class="text-sm text-gray-600">Ilmu Pengetahuan Sosial</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Halaman Review Jawaban -->
+        <div id="reviewPage" class="page">
+            <div class="card bg-white rounded-2xl p-8 md:p-12">
+                <div class="flex justify-between items-center mb-8">
+                    <button id="backToResults" class="text-primary font-medium flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i> Kembali ke Hasil
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-800">Tinjau Jawaban</h2>
+                </div>
+                <div id="reviewContent" class="space-y-6">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Kuis -->
+        <div id="quizPage" class="page">
+            <div class="card bg-white rounded-2xl p-8 md:p-12">
+                <div class="flex justify-between items-center mb-8">
+                    <button id="backToDashboard" class="text-primary font-medium flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i> Kembali ke Dashboard
+                    </button>
+                    <div class="flex items-center gap-4">
+                        <div class="bg-gray-100 px-3 py-1 rounded-full">
+                            <span id="currentQuestionNumber" class="font-bold">1</span>
+                            <span>/</span>
+                            <span id="totalQuestions">10</span>
+                        </div>
+                        <div id="timer" class="bg-red-100 text-red-500 px-3 py-1 rounded-full font-medium">
+                            30s
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-bar mb-8">
+                    <div id="progressFill" class="progress-fill" style="width: 10%"></div>
+                </div>
+
+                <div id="quizContent">
+                    <!-- Dimuat secara dinamis -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Hasil -->
+        <div id="resultsPage" class="page">
+            <div class="card bg-white rounded-2xl p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <img src="https://placehold.co/300x150" alt="Ilustrasi perayaan dengan konfeti dan trofi" class="mx-auto mb-6" />
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Kuis Selesai!</h2>
+                    <p class="text-gray-600">Berikut adalah hasil Anda</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row justify-center gap-8 mb-10">
+                    <div class="card bg-green-50 p-6 rounded-xl text-center flex-1">
+                        <div class="text-5xl font-bold text-green-600 mb-2"><span id="correctAnswers">0</span>/<span id="totalQuestionsResult">10</span></div>
+                        <p class="text-gray-700">Jawaban Benar</p>
+                    </div>
+                    
+                    <div class="card bg-blue-50 p-6 rounded-xl text-center flex-1">
+                        <div class="text-5xl font-bold text-blue-600 mb-2"><span id="scorePercentage">0</span>%</div>
+                        <p class="text-gray-700">Skor</p>
+                    </div>
+                    
+                    <div class="card bg-purple-50 p-6 rounded-xl text-center flex-1">
+                        <div id="timeTaken" class="text-5xl font-bold text-purple-600 mb-2">0s</div>
+                        <p class="text-gray-700">Waktu yang Dihabiskan</p>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-gray-800">Rincian Kinerja</h3>
+                        <span id="performanceMessage" class="text-sm font-medium px-3 py-1 rounded-full bg-yellow-100 text-yellow-600">Kerja Bagus!</span>
+                    </div>
+                    <div class="space-y-4">
+                        <div id="indonesiaResult" class="hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium">Indonesia</span>
+                                <span class="text-sm text-gray-600">3/5 benar</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200">
+                                <div class="progress-fill bg-blue-500" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="mathResult" class="hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium">Matematika</span>
+                                <span class="text-sm text-gray-600">0/3 benar</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200">
+                                <div class="progress-fill bg-green-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row justify-center gap-4 mt-                <div class="flex flex-col md:flex-row justify-center gap-4 mt-6">
+                    <button id="reviewAnswersBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-medium">Tinjau Jawaban</button>
+                    <button id="newQuizBtn" class="btn-primary text-white py-3 px-6 rounded-lg font-medium">Mulai Kuis Baru</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database simulasi
+        let users = [];
+        let currentUser = null;
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 30;
+        let quizStartTime;
+        let timeTaken = 0;
+        
+        // Data kuis
+        const quizzes = {
+            // Kuis yang sudah ada
+            indonesia: [
+                {
+                    question: "Apa lambang negara Republik Indonesia?",
+                    options: ["Harimau", "Garuda Pancasila", "Macan", "Rajawali"],
+                    correctAnswer: 1
+                },
+                // (pertanyaan lainnya tetap sama)
+            ],
+            
+            // Kuis Bahasa Indonesia baru
+            bahasa: [
+                {
+                    question: "Apa yang dimaksud dengan 'diksi' dalam bahasa Indonesia?",
+                    options: ["Tata bahasa", "Pilihan kata", "Struktur kalimat", "Ejaan"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Siapakah penulis novel 'Laskar Pelangi'?",
+                    options: ["Tere Liye", "Andrea Hirata", "Dee Lestari", "Pramoedya Ananta Toer"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Apa jenis kata dari 'berlari'?",
+                    options: ["Kata benda", "Kata sifat", "Kata kerja", "Kata ganti"],
+                    correctAnswer: 2
+                },
+                {
+                    question: "Apa yang dimaksud dengan 'antonim'?",
+                    options: ["Kata yang sama pengucapannya", "Kata yang berlawanan makna", "Kata serapan", "Kata dasar"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Siapakah yang disebut sebagai 'Bapak Bahasa Indonesia'?",
+                    options: ["Sutan Takdir Alisjahbana", "Chairil Anwar", "Muhammad Yamin", "Ki Hajar Dewantara"],
+                    correctAnswer: 3
+                }
+            ],
+            
+            // Kuis IPA baru
+            ipa: [
+                {
+                    question: "Proses fotosintesis pada tumbuhan menghasilkan...",
+                    options: ["Oksigen", "Karbon dioksida", "Nitrogen", "Hidrogen"],
+                    correctAnswer: 0
+                },
+                {
+                    question: "Bagian sel yang disebut 'otak sel' adalah...",
+                    options: ["Mitokondria", "Nukleus", "Ribosom", "Membran sel"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Zat yang dihasilkan lebah madu adalah...",
+                    options: ["Nektar", "Royal jelly", "Propolis", "Semua benar"],
+                    correctAnswer: 3
+                },
+                {
+                    question: "Planet terdekat dengan matahari adalah...",
+                    options: ["Venus", "Mars", "Mercury", "Bumi"],
+                    correctAnswer: 2
+                },
+                {
+                    question: "Penyakit yang disebabkan oleh virus adalah...",
+                    options: ["TBC", "Malaria", "Demam berdarah", "Tifus"],
+                    correctAnswer: 2
+                }
+            ],
+            
+            // Kuis IPS baru
+            ips: [
+                {
+                    question: "Lembaga negara yang bertugas membuat UU adalah...",
+                    options: ["Eksekutif", "Legislatif", "Yudikatif", "DPR"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Mata uang negara Jepang adalah...",
+                    options: ["Dollar", "Ringgit", "Yen", "Won"],
+                    correctAnswer: 2
+                },
+                {
+                    question: "Tokoh proklamator Indonesia adalah...",
+                    options: ["Soekarno-Hatta", "Soeharto-Habibie", "Gandhi-Nehru", "Jokowi-Ma'ruf"],
+                    correctAnswer: 0
+                },
+                {
+                    question: "Pasar bebas ASEAN disebut...",
+                    options: ["APEC", "AFTA", "WTO", "OPEC"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Ibukota provinsi Jawa Barat adalah...",
+                    options: ["Bandung", "Jakarta", "Semarang", "Surabaya"],
+                    correctAnswer: 0
+                }
+            ],
+            math: [
+                {
+                    question: "Berapa hasil dari 2 + 2 × 2?",
+                    options: ["6", "8", "4", "2"],
+                    correctAnswer: 0
+                },
+                {
+                    question: "Berapa akar kuadrat dari 144?",
+                    options: ["11", "12", "13", "14"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Berapa hasil dari 50% dari 200?",
+                    options: ["50", "100", "150", "200"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Jika x + 5 = 15, berapa nilai x?",
+                    options: ["5", "10", "15", "20"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Berapa hasil dari 3² + 4²?",
+                    options: ["9", "16", "25", "7"],
+                    correctAnswer: 2
+                }
+            ],
+            geography: [
+                {
+                    question: "Apa gunung tertinggi di Indonesia?",
+                    options: ["Semeru", "Rinjani", "Kerinci", "Jaya Wijaya"],
+                    correctAnswer: 3
+                },
+                {
+                    question: "Selat apa yang memisahkan Jawa dan Sumatera?",
+                    options: ["Selat Sunda", "Selat Malaka", "Selat Bali", "Selat Lombok"],
+                    correctAnswer: 0
+                },
+                {
+                    question: "Provinsi apakah yang baru saja dimekarkan dari Papua?",
+                    options: ["Papua Barat Daya", "Papua Pegunungan", "Papua Tengah", "Semua benar"],
+                    correctAnswer: 3
+                },
+                {
+                    question: "Pulau apakah yang terbesar di Indonesia?",
+                    options: ["Sumatera", "Kalimantan", "Jawa", "Papua"],
+                    correctAnswer: 1
+                },
+                {
+                    question: "Apa danau terbesar di Indonesia?",
+                    options: ["Danau Toba", "Danau Singkarak", "Danau Poso", "Danau Tempe"],
+                    correctAnswer: 0
+                }
+            ],
+            
+        };
+
+        // Elemen DOM
+        const pages = {
+            welcome: document.getElementById('welcomePage'),
+            login: document.getElementById('loginPage'),
+            register: document.getElementById('registerPage'),
+            dashboard: document.getElementById('dashboardPage'),
+            quiz: document.getElementById('quizPage'),
+            results: document.getElementById('resultsPage')
+        };
+
+        // Fungsi navigasi
+        function showPage(pageId) {
+            // Sembunyikan semua halaman
+            Object.values(pages).forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Tampilkan halaman yang diminta
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Event listener untuk navigasi
+        document.getElementById('loginBtn').addEventListener('click', () => showPage('loginPage'));
+        document.getElementById('registerBtn').addEventListener('click', () => showPage('registerPage'));
+        document.getElementById('goToRegisterFromLogin').addEventListener('click', () => showPage('registerPage'));
+        document.getElementById('goToLoginFromRegister').addEventListener('click', () => showPage('loginPage'));
+        document.getElementById('backToDashboard').addEventListener('click', () => {
+            resetQuiz();
+            showPage('dashboardPage');
+        });
+
+        // Helper validasi form
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId + 'Error');
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+
+        function hideError(elementId) {
+            document.getElementById(elementId + 'Error').classList.add('hidden');
+        }
+
+        // Fungsi login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            let isValid = true;
+
+            // Validasi email
+            if (!email) {
+                showError('loginEmail', 'Email diperlukan');
+                isValid = false;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showError('loginEmail', 'Masukkan email yang valid');
+                isValid = false;
+            } else {
+                hideError('loginEmail');
+            }
+
+            // Validasi password
+            if (!password) {
+                showError('loginPassword', 'Password diperlukan');
+                isValid = false;
+            } else {
+                hideError('loginPassword');
+            }
+            
+            if (isValid) {
+                // Cari pengguna di database
+                const user = users.find(u => u.email === email && u.password === password);
+                
+                if (user) {
+                    // Login berhasil
+                    currentUser = user;
+                    document.getElementById('userNameDisplay').textContent = user.name;
+                    showPage('dashboardPage');
+                    
+                    // Reset form
+                    this.reset();
+                } else {
+                    showError('loginPassword', 'Email atau password salah');
+                }
+            }
+        });
+
+        // Fungsi registrasi
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+            const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
+            let isValid = true;
+
+            // Validasi nama
+            if (!name) {
+                showError('registerName', 'Nama lengkap diperlukan');
+                isValid = false;
+            } else {
+                hideError('registerName');
+            }
+
+            // Validasi email
+            if (!email) {
+                showError('registerEmail', 'Email diperlukan');
+                isValid = false;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showError('registerEmail', 'Masukkan email yang valid');
+                isValid = false;
+            } else if (users.some(u => u.email === email)) {
+                showError('registerEmail', 'Email sudah terdaftar');
+                isValid = false;
+            } else {
+                hideError('registerEmail');
+            }
+
+            // Validasi password
+            if (!password) {
+                showError('registerPassword', 'Password diperlukan');
+                isValid = false;
+            } else if (password.length < 6) {
+                showError('registerPassword', 'Password minimal 6 karakter');
+                isValid = false;
+            } else {
+                hideError('registerPassword');
+            }
+
+            // Validasi konfirmasi password
+            if (password !== confirmPassword) {
+                showError('registerConfirmPassword', 'Password tidak cocok');
+                isValid = false;
+            } else if (!confirmPassword) {
+                showError('registerConfirmPassword', 'Tolong konfirmasi password');
+                isValid = false;
+            } else {
+                hideError('registerConfirmPassword');
+            }
+
+            if (isValid) {
+                // Daftarkan pengguna baru
+                const newUser = { id: Date.now(), name, email, password };
+                users.push(newUser);
+                currentUser = newUser;
+                
+                // Update UI dan tampilkan dashboard
+                document.getElementById('userNameDisplay').textContent = name;
+                showPage('dashboardPage');
+                
+                // Reset form
+                this.reset();
+            }
+        });
+
+        // Fungsi logout
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            currentUser = null;
+            showPage('welcomePage');
+        });
+
+        // Pemilihan kuis
+        document.querySelectorAll('[data-quiz]').forEach(quizCard => {
+            quizCard.addEventListener('click', function() {
+                currentQuiz = this.getAttribute('data-quiz');
+                startQuiz(currentQuiz);
+            });
+        });
+
+        // Fungsi mulai kuis
+        function startQuiz(quizType) {
+            currentQuestionIndex = 0;
+            score = 0;
+            timeLeft = 30;
+            quizStartTime = Date.now();
+            
+            // Update UI
+            document.getElementById('totalQuestions').textContent = quizzes[quizType].length;
+            
+            // Muat pertanyaan pertama
+            loadQuestion(quizType);
+            showPage('quizPage');
+            
+            // Mulai timer
+            startTimer();
+        }
+
+        // Fungsi memuat pertanyaan
+        function loadQuestion(quizType) {
+            const question = quizzes[quizType][currentQuestionIndex];
+            const quizContent = document.getElementById('quizContent');
+            
+            // Update progres
+            document.getElementById('currentQuestionNumber').textContent = currentQuestionIndex + 1;
+            document.getElementById('progressFill').style.width = `${((currentQuestionIndex + 1) / quizzes[quizType].length) * 100}%`;
+            
+            // Reset timer
+            resetTimer();
+            timeLeft = 30;
+            document.getElementById('timer').textContent = `${timeLeft}s`;
+            
+            // Buat HTML pertanyaan
+            quizContent.innerHTML = `
+                <div class="question-container mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">${question.question}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${question.options.map((option, index) => `
+                            <div class="option-card bg-white rounded-lg p-4 border-2" data-option="${index}">
+                                <span class="font-medium text-gray-800">${String.fromCharCode(65 + index)}. ${option}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <button id="nextQuestionBtn" class="btn-primary text-white py-3 px-6 rounded-lg font-medium w-full md:w-auto md:px-8 opacity-50 cursor-not-allowed" disabled>Pertanyaan Berikutnya</button>
+            `;
+            
+            // Tambahkan event listener ke opsi
+            document.querySelectorAll('.option-card').forEach(option => {
+                option.addEventListener('click', function() {
+                    // Hapus seleksi dari semua opsi
+                    document.querySelectorAll('.option-card').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    // Pilih opsi ini
+                    this.classList.add('selected');
+                    
+                    // Aktifkan tombol berikutnya
+                    document.getElementById('nextQuestionBtn').disabled = false;
+                    document.getElementById('nextQuestionBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+            });
+            
+            // Tambahkan event listener ke tombol berikutnya
+            document.getElementById('nextQuestionBtn').addEventListener('click', function() {
+                processAnswer(quizType);
+            });
+        }
+
+        // Fungsi memproses jawaban
+        function processAnswer(quizType) {
+            const selectedOption = document.querySelector('.option-card.selected');
+            if (!selectedOption) return;
+            
+            const selectedOptionIndex = parseInt(selectedOption.getAttribute('data-option'));
+            const correctOptionIndex = quizzes[quizType][currentQuestionIndex].correctAnswer;
+            
+            // Tandai jawaban benar dan salah
+            document.querySelectorAll('.option-card').forEach(option => {
+                const optionIndex = parseInt(option.getAttribute('data-option'));
+                if (optionIndex === correctOptionIndex) {
+                    option.classList.add('correct');
+                } else if (optionIndex === selectedOptionIndex && selectedOptionIndex !== correctOptionIndex) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            // Update skor jika benar
+            if (selectedOptionIndex === correctOptionIndex) {
+                score++;
+            }
+            
+            // Nonaktifkan seleksi lebih lanjut
+            document.querySelectorAll('.option-card').forEach(option => {
+                option.style.pointerEvents = 'none';
+            });
+            
+            // Ubah tombol untuk melanjutkan
+            const nextButton = document.getElementById('nextQuestionBtn');
+            nextButton.textContent = currentQuestionIndex < quizzes[quizType].length - 1 ? 'Lanjut' : 'Selesaikan Kuis';
+            nextButton.removeEventListener('click', arguments.callee);
+            
+            // Pindah ke pertanyaan berikutnya atau selesaikan kuis
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizzes[quizType].length) {
+                    loadQuestion(quizType);
+                } else {
+                    finishQuiz(quizType);
+                }
+            }, 1500);
+        }
+
+        // Fungsi timer
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `${timeLeft}s`;
+                
+                if (timeLeft <= 10) {
+                    document.getElementById('timer').classList.add('text-red-500');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    setTimeout(() => {
+                        autoSubmitQuestion(currentQuiz);
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            document.getElementById('timer').classList.remove('text-red-500');
+        }
+
+        function autoSubmitQuestion(quizType) {
+            // Submit otomatis jika waktu habis
+            const hasSelected = document.querySelector('.option-card.selected');
+            
+            if (!hasSelected) {
+                // Sorot jawaban yang benar
+                const correctOptionIndex = quizzes[quizType][currentQuestionIndex].correctAnswer;
+                document.querySelector(`.option-card[data-option="${correctOptionIndex}"]`).classList.add('correct');
+                
+                // Nonaktifkan seleksi lebih lanjut
+                document.querySelectorAll('.option-card').forEach(option => {
+                    option.style.pointerEvents = 'none';
+                });
+                
+                // Aktifkan tombol lanjut
+                const nextButton = document.getElementById('nextQuestionBtn');
+                nextButton.disabled = false;
+                nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                nextButton.textContent = currentQuestionIndex < quizzes[quizType].length - 1 ? 'Lanjut' : 'Selesaikan Kuis';
+            }
+        }
+
+        // Fungsi menyelesaikan kuis
+        function finishQuiz(quizType) {
+            clearInterval(timer);
+            timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
+            
+            // Hitung skor
+            const totalQuestions = quizzes[quizType].length;
+            const percentage = Math.round((score / totalQuestions) * 100);
+            
+            // Update halaman hasil
+            document.getElementById('correctAnswers').textContent = score;
+            document.getElementById('totalQuestionsResult').textContent = totalQuestions;
+            document.getElementById('scorePercentage').textContent = percentage;
+            document.getElementById('timeTaken').textContent = `${timeTaken}s`;
+            
+            // Pesan performa
+            const performanceMessage = document.getElementById('performanceMessage');
+            if (percentage >= 80) {
+                performanceMessage.textContent = 'Luar Biasa!';
+                performanceMessage.className = 'text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-600';
+            } else if (percentage >= 50) {
+                performanceMessage.textContent = 'Kerja Bagus!';
+                performanceMessage.className = 'text-sm font-medium px-3 py-1 rounded-full bg-yellow-100 text-yellow-600';
+            } else {
+                performanceMessage.textContent = 'Terus Berlatih!';
+                performanceMessage.className = 'text-sm font-medium px-3 py-1 rounded-full bg-red-100 text-red-600';
+            }
+            
+            showPage('resultsPage');
+        }
+
+        // Fungsi reset kuis
+        function resetQuiz() {
+            clearInterval(timer);
+            currentQuiz = null;
+            currentQuestionIndex = 0;
+            score = 0;
+            timeLeft = 30;
+        }
+
+        // Tombol halaman hasil
+        document.getElementById('newQuizBtn').addEventListener('click', function() {
+            showPage('dashboardPage');
+        });
+
+        document.getElementById('reviewAnswersBtn').addEventListener('click', function() {
+            alert('Dalam implementasi lengkap, ini akan menampilkan setiap pertanyaan beserta jawaban Anda dan jawaban yang benar.');
+        });
+
+        // Inisialisasi beberapa pengguna untuk demo
+        users.push({
+            id: 1,
+            name: "Pengguna Demo",
+            email: "demo@example.com",
+            password: "password123"
+        });
+    </script>
+</body>
+</html>
